@@ -1,100 +1,117 @@
 import turtle
 import random
-import time
 
-screen = turtle.Screen()
-screen.title("Turtle Snake Game")
-screen.screensize(600,600)
-screen.bgcolor("yellow")
-screen.tracer(0)
+# Constants
+SCREEN_SIZE = 600
+STEP = 20
+INITIAL_DELAY = 0.15
+
+class SnakeGame:
+    def __init__(self):
+        self.screen = turtle.Screen()
+        self.screen.title("Turtle Snake Game")
+        self.screen.screensize(SCREEN_SIZE, SCREEN_SIZE)
+        self.screen.bgcolor("yellow")
+        self.screen.tracer(0)
+        self.score = 0
+        self.delay = INITIAL_DELAY
+        self.snake = []
+        self.food = self.create_food()
+        self.initialize_snake()
+        self.display_score()
+        self.bind_controls()
+
+    def initialize_snake(self):
+        head = turtle.Turtle()
+        head.shape("square")
+        head.color("black")
+        head.penup()
+        self.snake.append(head)
+
+    def create_food(self):
+        food = turtle.Turtle()
+        food.shape("circle")
+        food.color("red")
+        food.penup()
+        food.goto(random.randint(-SCREEN_SIZE//2, SCREEN_SIZE//2),
+                  random.randint(-SCREEN_SIZE//2, SCREEN_SIZE//2))
+        return food
+
+    def display_score(self):
+        self.score_display = turtle.Turtle()
+        self.score_display.hideturtle()
+        self.score_display.penup()
+        self.score_display.goto(0, SCREEN_SIZE // 2 - 40)
+        self.score_display.write(f"Score: {self.score}", align="center", font=("Arial", 16, "normal"))
+
+    def move(self):
+        for i in range(len(self.snake) - 1, 0, -1):
+            self.snake[i].goto(self.snake[i - 1].xcor(), self.snake[i - 1].ycor())
+        head = self.snake[0]
+        if head.direction == "up":
+            head.sety(head.ycor() + STEP)
+        elif head.direction == "down":
+            head.sety(head.ycor() - STEP)
+        elif head.direction == "left":
+            head.setx(head.xcor() - STEP)
+        elif head.direction == "right":
+            head.setx(head.xcor() + STEP)
+
+    def grow_snake(self):
+        segment = turtle.Turtle()
+        segment.shape("square")
+        segment.color("gray")
+        segment.penup()
+        self.snake.append(segment)
+
+    def check_collisions(self):
+        head = self.snake[0]
+        # Check collision with walls
+        if abs(head.xcor()) > SCREEN_SIZE // 2 or abs(head.ycor()) > SCREEN_SIZE // 2:
+            return True
+        # Check collision with self
+        for segment in self.snake[1:]:
+            if segment.distance(head) < 20:
+                return True
+        return False
+
+    def update_food(self):
+        if self.snake[0].distance(self.food) < 20:
+            self.food.goto(random.randint(-SCREEN_SIZE//2, SCREEN_SIZE//2),
+                           random.randint(-SCREEN_SIZE//2, SCREEN_SIZE//2))
+            self.grow_snake()
+            self.score += 1
+            self.score_display.clear()
+            self.score_display.write(f"Score: {self.score}", align="center", font=("Arial", 16, "normal"))
+            self.delay = max(0.05, self.delay - 0.01)
+
+    def bind_controls(self):
+        self.screen.listen()
+        self.screen.onkey(lambda: self.set_direction("up"), "Up")
+        self.screen.onkey(lambda: self.set_direction("down"), "Down")
+        self.screen.onkey(lambda: self.set_direction("left"), "Left")
+        self.screen.onkey(lambda: self.set_direction("right"), "Right")
+
+    def set_direction(self, direction):
+        head_direction = self.snake[0].direction
+        if (direction == "up" and head_direction != "down") or \
+           (direction == "down" and head_direction != "up") or \
+           (direction == "left" and head_direction != "right") or \
+           (direction == "right" and head_direction != "left"):
+            self.snake[0].direction = direction
+
+    def run_game(self):
+        self.snake[0].direction = "stop"
+        while True:
+            self.screen.update()
+            self.move()
+            self.update_food()
+            if self.check_collisions():
+                break
+            self.screen.ontimer(None, int(self.delay * 1000))
+        self.screen.bye()  # Close game window on game over
 
 
-
-snake=turtle.Turtle()
-snake.speed(8)
-snake.fillcolor("black")
-snake.shape("square")
-snake.penup()
-snake.home()
-snake.direction = "stop"
-
-food=turtle.Turtle()
-food.fillcolor("red")
-food.shape("square")
-food.penup()
-food.home()
-food.goto(0,100)
-
-numscore=0
-score=turtle.Turtle()
-score.penup()
-score.goto(0,260)
-score.write(f"Score={numscore}",align="center",font=("ds-digital", 24, "normal"))
-score.hideturtle()
-
-def go_up():
-    if snake.direction !="down":
-        snake.direction ="up"
-
-def go_down():
-    if snake.direction !="up":
-        snake.direction ="down"
-
-def go_left():
-    if snake.direction !="right":
-        snake.direction ="left"
-
-def go_right():
-    if snake.direction !="left":
-        snake.direction ="right"
-
-def move():
-    if snake.direction =="up":
-        y = snake.ycor()
-        snake.sety(y+20)
-    if snake.direction=="down":
-        y=snake.ycor()
-        snake.sety(y-20)
-    if snake.direction=="left":
-        x=snake.xcor()
-        snake.setx(x-20)
-    if snake.direction=="right":
-        x=snake.xcor()
-        snake.setx(x+20)
-
-screen.listen()
-screen.onkeypress(go_up,"w")
-screen.onkeypress(go_down,"s")
-screen.onkeypress(go_left,"a")
-screen.onkeypress(go_right,"d")
-
-
-segment = []
-
-while True:
-    time.sleep(0.5)    
-    screen.update()
-
-    if snake.distance(food) <20:
-        food.goto(random.randint(-290,290),random.randint(-290,290))
-        newsnake= snake.clone()
-        segment.append(newsnake)
-        numscore+=1
-        score.clear()
-        score.write(f"Score={numscore}",align="center",font=("ds-digital", 24, "normal"))
-
-
-    for index in range(len(segment) -1, 0, -1):
-        x = segment[index-1].xcor()
-        y = segment[index-1].ycor()
-        segment[index].goto(x,y)
-
-    if len(segment)>0:
-        x = snake.xcor()
-        y = snake.ycor()
-        segment[0].goto(x,y)
-
-    move()
-
-
-screen.mainloop()
+if __name__ == "__main__":
+    game = SnakeGame()
+    game.run_game()
